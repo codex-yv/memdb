@@ -1,0 +1,9 @@
+*.exe
+/build/
+/bin/
+/Debug/
+/Release/
+/x64/
+/x86/
+/cmake-build-*/
+.vscode/
