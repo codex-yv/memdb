@@ -16,7 +16,7 @@ int main() {
         // Connect to the running MemDB server
         MemDB db("127.0.0.1", 7379);
 
-        // ── Basic SET / GET / DEL ─────────────────────────────────────────────
+        // Basic SET / GET / DEL 
 
         db.set("name", "Alice");
         db.set("city", "Mumbai");
@@ -27,7 +27,7 @@ int main() {
         std::cout << "score = " << db.get("score") << "\n"; // 42
         std::cout << "keys  = " << db.size()        << "\n"; // 3
 
-        // ── Check key existence ───────────────────────────────────────────────
+        // Check key existence
 
         std::string val;
         if (db.get("name", val))
@@ -35,22 +35,22 @@ int main() {
         else
             std::cout << "Key not found\n";
 
-        // ── Delete ────────────────────────────────────────────────────────────
+        // Delete 
 
         bool deleted = db.del("city");
         std::cout << "Deleted city: " << (deleted ? "yes" : "no") << "\n";
         std::cout << "After delete, size = " << db.size() << "\n"; // 2
 
-        // ── Overwrite ─────────────────────────────────────────────────────────
+        // Overwrite
 
         db.set("name", "Bob");
         std::cout << "Updated name = " << db.get("name") << "\n"; // Bob
 
-        // ── Missing key returns empty string ──────────────────────────────────
+        // Missing key returns empty string 
 
         std::cout << "Missing key = '" << db.get("doesnt_exist") << "'\n"; // ''
 
-        // ── Ping ──────────────────────────────────────────────────────────────
+        // Ping 
 
         std::cout << "Server alive: " << (db.ping() ? "yes" : "no") << "\n";
 
