@@ -9,20 +9,23 @@ Supports `SET`, `GET`, `DEL`, `PING`, `SIZE` over a TCP text protocol.
 
 ```
 memdb/
+├── external/pybind11
 ├── server/src/
-│   ├── main.cpp        Entry point + signal handling
-│   ├── server.cpp/.h   TCP accept loop, thread pool
-│   ├── store.cpp/.h    unordered_map + shared_mutex
-│   └── parser.cpp/.h   Protocol parser
+│   ├── main.cpp         Entry point + signal handling
+│   ├── server.cpp/.h    TCP accept loop, thread pool
+│   ├── store.cpp/.h     unordered_map + shared_mutex
+│   └── parser.cpp/.h    Protocol parser
 ├── client/
-│   ├── memdb.h         ← Include this in your project
-│   └── memdb.cpp       TCP socket client implementation
-├── cli/
-│   └── main.cpp        Interactive REPL + one-shot CLI
-├── example.cpp         Usage demo
+│   ├── memdb_pybind.cpp Python bindings with pybind11
+│   ├── memdb.h          ← Include this in your project
+│   └── memdb.cpp        TCP socket client implementation
+├── cli/ 
+│   └── main.cpp         Interactive REPL + one-shot CLI
+├── example.cpp          Usage demo
 ├── CMakeLists.txt
-├── Dockerfile
-└── render.yaml
+├── .gitignore
+├── .gitmodule
+├── setup.py             to generate .pyd file
 ```
 
 ---
@@ -42,7 +45,7 @@ pacman -S mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x
 ```bash
 cd ~
 # If using git:
-# git clone https://github.com/yourname/memdb.git
+git clone https://github.com/codex-yv/memdb.git
 cd memdb
 ```
 
@@ -182,32 +185,99 @@ echo "GET foo"     | nc 127.0.0.1 7379
 MemDB db("127.0.0.1", 8000);
 ```
 
----
+# Make Module for python using pybind11
 
-## Cloud Deployment (Render / Railway / Fly.io)
+Run the below commands inside the root directory of the project.
 
-The server reads the `PORT` environment variable automatically (cloud platforms inject this).
 
-### Render
-
-1. Push to GitHub
-2. Create a new **Web Service** → select your repo → choose **Docker**
-3. Render sets `$PORT` automatically — no config needed
-
-### Railway / Fly.io
+*`Use MSYS2 UCRT64 terminal`*
 
 ```bash
-# Railway
-railway up
+# add the externals
+git clone --recurse-submodules https://github.com/pybind/pybind11
+# move to the clone directory
+cd external/pybind11/
+# make a build folder
+mkdir build
+# move to the build folder
+cd build
+# build the project
+cmake ..
+cd ..
+cmake --build build -j 12 # here -j 12 means -> build using 12 cores
 
-# Fly.io
-fly launch
-fly deploy
 ```
 
-The `Dockerfile` builds a minimal Debian image (~40MB) with just the server binary.
+Inside the root directory terminal PowerShell (recommended) run the below commands:
 
----
+```bash
+# create a virtual environment
+python -m venv venv
+
+# activate the virtual environment
+.\venv\Scripts\activate
+
+# install the requirements
+pip install requirements.txt
+```
+Now create `.vscode` folder inside the root directory of the project and create a file `c_cpp_properties.json` in it.
+
+**Content of the json file**
+```json
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "C:/Users/XXXXX/AppData/Local/Programs/Python/Python3XX/Include",
+                "C:/YOUR_PROJECT_ROOT_DIRECTORY/venv/Lib/site-packages/pybind11/include"
+            ],
+            "defines": [],
+            "compilerPath": "C:/msys64/ucrt64/bin/g++.exe",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "windows-gcc-x64"
+        }
+    ],
+    "version": 4
+}
+```
+
+Now we are ready to run `setup.py` file. Inside the root directory terminal run the following command (make sure that the virtual environment is activated):
+
+```bash
+python setup.py build_ext --inplace
+# this will create memdb.cp3XX-win_amd64.pyd file in your root directory.
+```
+## How to use memdb in python
+
+Copy the pyd file inside your project. After this your project structure should look similar as below:
+
+memdb/
+├── memdb.cp3xx-win_amd64.pyd
+├── main.py
+
+update main.py as below:
+```python
+import memdb
+
+try:
+    db = memdb.MemDB("127.0.0.1", 7379)
+
+    db.set("name", "Youraj")
+
+    print(db.get("name"))
+
+    print(db.size())
+
+    print(db.ping())
+
+    db.delete("name")
+except memdb.MemDBException:
+    print("Server is not on!")
+```
+
 
 ## Thread Safety
 
